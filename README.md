@@ -222,8 +222,6 @@ MIT — free to use, modify, and deploy.
 
 <div align="center">
 
-Built with ⚖️ by [Akshay Arun Iyer](https://github.com/Akshay-Arun-Iyer)
-
 **Stop signing contracts blind.**
 
 </div>
