@@ -85,7 +85,7 @@ Download a clean, formatted multi-page audit report for sharing with your team o
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/Akshay-Arun-Iyer/RiskRadar.git
+git clone https://github.com/Dev-AbrarMulla/RiskRadar.git
 cd RiskRadar
 ```
 
