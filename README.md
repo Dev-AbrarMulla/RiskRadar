@@ -15,6 +15,8 @@
 
 *Most contract tools find vague wording. RiskRadar finds how you get robbed.*
 
+**Keywords:** contract analysis, legal tech, LLM, adversarial analysis, clause classification, risk assessment, exploit chains, CUAD, React, Node.js, Express, Groq, Llama 3.3.
+
 </div>
 
 ---
@@ -25,7 +27,7 @@ RiskRadar analyzes legal contracts the way an adversary would — not as a gramm
 
 > *"How can the other side legally exploit this contract against me?"*
 
-Upload or paste any contract and get a full adversarial breakdown in seconds.
+Upload or paste any contract (text, PDF or Word) and get a full adversarial breakdown: ranked issues, multi-clause exploit chains, step-by-step abuse scenarios and rewritten clauses. A rule-based clause classifier first tags every section, then a large language model audits each one against a checklist of known contract exploits.
 
 ---
 
@@ -116,6 +118,26 @@ Open **http://localhost:3000** in your browser.
 
 ---
 
+## 📚 Background & Theory
+
+**Why an adversarial view.** Ordinary review asks "is this clause clear?". Adversarial review asks "who benefits if this clause is read in the worst way for me?". A clause is risky when it gives one party *unilateral control* (terms like "sole discretion" or "deemed complete"), lets *silence count as consent*, or lets money move without a matching delivery. The prompts and checklists in RiskRadar are built around those three patterns.
+
+**Risk emerges from combinations.** A payment clause, a completion clause and an IP clause can each look fair alone. Together they can mean "pay in full, but the other side decides when the work is complete, and IP only transfers on completion". That is why the analysis has a separate cross-clause phase that checks how clause types interact, not only each clause in isolation.
+
+**Step 1: a rule-based clause pre-classifier (`server/clauseClassifier.js`).** The contract is split into clauses and each clause is scored against keyword lists for categories such as `PAYMENT`, `ACCEPTANCE`, `TERMINATION`, `INTELLECTUAL_PROPERTY`, `COMPLETION`, `DELIVERY`, `LIABILITY`, `REVISION` and `CONFIDENTIALITY`. The categories follow the clause types annotated in the Atticus **CUAD** (Contract Understanding Atticus Dataset) benchmark. This is keyword matching, not a trained model. The confidence score for a category starts at 0.45 and grows with the logarithm of the number of keyword hits, and a tag is kept when it reaches the 0.45 threshold. The classifier only identifies and tags clauses. It does not judge risk.
+
+**Step 2: LLM audit.** The tags are turned into a mandatory section checklist inside the prompt, so the model has to address every detected section and cannot stop after the obvious ones. The model is asked to answer in a fixed JSON structure (issues, exploit chains, abuse scenarios, fixes) at low temperature (0.1) so the output can be parsed and rendered. The server parses it defensively: it strips code fences, finds the JSON object, normalises risk levels and removes duplicate issues and scenarios.
+
+**Step 3: post-processing.** Some severity labels are adjusted in code. Sections that are normally lower-risk (for example notices, confidentiality or governing law) are downgraded from High to Medium or Low unless the explanation mentions payment, termination or ownership. This is a heuristic to stop smaller models from labelling everything High or Critical.
+
+**Known limits of the approach.**
+- It is a language model reading a contract, so it can miss issues, invent issues, or misread jurisdiction-specific law. The prompt asks for a minimum number of issues, which can push the model to over-report.
+- Keyword tagging misses clauses that use unusual wording.
+- Severity ratings are indicative, not a measured probability of loss.
+- Output is not legal advice (see the disclaimer below).
+
+---
+
 ## 📁 Project Structure
 
 ```
@@ -189,7 +211,8 @@ Phase 4 — Abuse Scenario Enforcement
 |----------|----------|-------------|
 | `OPENAI_API_KEY` | ✅ | Your Groq API key |
 | `OPENAI_API_BASE` | ✅ | `https://api.groq.com/openai/v1` |
-| `OPENAI_MODEL` | Optional | Default: `llama-3.3-70b-versatile` |
+| `OPENAI_MODEL` | Optional | Model name sent to the API. `.env.example` sets `llama-3.3-70b-versatile`; if unset, the server falls back to `gpt-4o` |
+| `ANTHROPIC_API_KEY` | Optional | If set, the server uses the Anthropic API instead of the OpenAI-compatible endpoint |
 | `PORT` | Optional | Server port, default `5000` |
 
 ---
